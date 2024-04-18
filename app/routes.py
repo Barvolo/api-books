@@ -31,12 +31,17 @@ def create_book():
     print(f'Book ID {book_id} added:', books[book_id])
 
     # Return the new book record with status code 201 (Created)
-    return jsonify({"id": str(book_id)}), 201  # Respond with string ID as per requirement
+    return jsonify({"id": str(book_id), "status code": str(201)}), 201  # Respond with string ID as per requirement
 
 @api_blueprint.route('/books', methods=['GET'])
 def get_books():
     # Convert the books dictionary into a list of values
     all_books = list(books.values())
+    query_string = request.query_string.decode("utf-8")
+    for q in query_string.split('&'):
+        key, value = q.split('=')
+        all_books = [book for book in all_books if book[key] == value]
+        
     # Return the list of books as a JSON array
     return jsonify(all_books), 200
 
