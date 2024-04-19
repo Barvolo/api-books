@@ -1,4 +1,6 @@
 from flask import Blueprint, request, jsonify
+
+from app.rating import create_rating
 from .external_apis import fetch_book_details
 from urllib.parse import unquote
 
@@ -31,6 +33,7 @@ def create_book():
     # Print to console for debugging (can be removed in production)
     print(f'Book ID {book_id} added:', books[book_id])
 
+    create_rating(books[book_id])
     # Return the new book record with status code 201 (Created)
     return jsonify({"id": str(book_id), "status code": str(201)}), 201  # Respond with string ID as per requirement
 
@@ -80,7 +83,7 @@ def get_books():
     query_params = request.query_string.decode("utf-8")
     all_books = list(books.values())
     result_books = []  # List to store final filtered books
-    seen_book_ids = set()  # Set to keep track of book ids that have already been added
+    #seen_book_ids = set()  # Set to keep track of book ids that have already been added
     
     if query_params == '':
         return jsonify(all_books), 200
@@ -115,12 +118,42 @@ def get_book(book_id):
 
 @api_blueprint.route('/books/<int:book_id>', methods=['DELETE'])
 def delete_book(book_id):
-    # Attempt to retrieve the book by ID
     book = books.get(book_id)
     if book:
         del books[book_id]
         return jsonify({"status": "Book deleted"}), 200
     else:
         return jsonify({"error": "Book not found"}), 404
+
+@api_blueprint.route('/books/<int:book_id>', methods=['PUT'])
+def update_book(book_id):
+    # Check if the media type is JSON
+    if request.mimetype != 'application/json' or not request.is_json:
+        return jsonify({"error": "Invalid media type, must be application/json"}), 415
     
+    # Check if the book exists
+    if book_id not in books.keys():
+        return jsonify({"error": "Book not found"}), 404
     
+    # Get the update data
+    update_data = request.json
+    required_fields = ['title', 'authors', 'ISBN', 'genre', 'publisher', 'publishedDate', 'language', 'summary', 'id']
+
+    # Check if all required fields are in the update data
+    if not all(field in update_data for field in required_fields):
+        return jsonify({"error": "Missing fields, all fields must be provided"}), 422
+
+    # Update the book
+    books[book_id] = {
+        'title': update_data['title'],
+        'authors': update_data['authors'],
+        'ISBN': update_data['ISBN'],
+        'genre': update_data['genre'],
+        'publisher': update_data['publisher'],
+        'publishedDate': update_data['publishedDate'],
+        'language': update_data['language'],
+        'summary': update_data['summary'],
+        'id': book_id  # Preserve the ID
+    }
+    return jsonify({"id": book_id}), 200
+
