@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from app.rating import create_rating
+from app.rating import create_rating, delete_rating
 from .external_apis import fetch_book_details
 from urllib.parse import unquote
 
@@ -121,6 +121,7 @@ def delete_book(book_id):
     book = books.get(book_id)
     if book:
         del books[book_id]
+        delete_rating(book_id)
         return jsonify({"status": "Book deleted"}), 200
     else:
         return jsonify({"error": "Book not found"}), 404
