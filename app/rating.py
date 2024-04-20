@@ -71,7 +71,6 @@ def add_rating_value(book_id):
     else:
         return jsonify({"error": "Rating not found"}), 404
     
-
 @ratings_blueprint.route('/ratings/top', methods=['GET'])
 def get_top_books():
     # Filter books that have at least 3 ratings
