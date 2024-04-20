@@ -98,5 +98,5 @@ def get_top_books():
     # Sort the selected top books by their average rating in descending order
     top_books_sorted = sorted(top_books, key=lambda x: x['average'], reverse=True)
 
-    return jsonify(top_books_sorted)
+    return jsonify(top_books_sorted), 200
 
