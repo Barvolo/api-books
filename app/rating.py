@@ -1,3 +1,4 @@
+from typing import Counter
 from urllib.parse import unquote
 from flask import Blueprint, request, jsonify
 
@@ -71,31 +72,42 @@ def add_rating_value(book_id):
     else:
         return jsonify({"error": "Rating not found"}), 404
     
-@ratings_blueprint.route('/ratings/top', methods=['GET'])
+@ratings_blueprint.route('/top', methods=['GET'])
 def get_top_books():
     # Filter books that have at least 3 ratings
     eligible_books = {book_id: data for book_id, data in ratings.items() if len(data['values']) >= 3}
 
     # Compute the top three scores
     if not eligible_books:
-        return jsonify([])  # Return an empty list if no books are eligible
+        return jsonify([]), 200  # Return an empty list if no books are eligible
 
-    # Find the top three unique scores
-    top_scores = sorted({data['average'] for data in eligible_books.values()}, reverse=True)[:3]
-    print(f'Top scores: {top_scores}')
-    
-    # Select all books that have an average rating in the top three scores
-    top_books = [
-        {
-            'id': str(book_id),
-            'title': data['title'],
-            'average': data['average']
-        }
-        for book_id, data in eligible_books.items() if data['average'] in top_scores
-    ]
+    # Gather all eligible scores
+    scores = [data['average'] for data in eligible_books.values()]
 
-    # Sort the selected top books by their average rating in descending order
+    # Use a Counter to count frequencies of each score
+    score_frequencies = Counter(scores)
+
+    # Sort the scores and extract the top 3 unique scores
+    top_three_scores = sorted(score_frequencies.keys(), reverse=True)[:3]
+
+    # Build the dictionary for the top 3 scores with their frequencies
+    top_scores_dict = {score: score_frequencies[score] for score in top_three_scores}
+
+    cumulative_count = 0
+    top_books = []
+    for score, count in top_scores_dict.items():
+        cumulative_count += count
+        top_books.extend([
+            {
+                'id': book_id,
+                'title': data['title'],
+                'average': data['average']
+            }
+            for book_id, data in eligible_books.items() if data['average'] == score
+        ])
+        if cumulative_count >= 3:
+            break
+
     top_books_sorted = sorted(top_books, key=lambda x: x['average'], reverse=True)
-
     return jsonify(top_books_sorted), 200
 
