@@ -9,7 +9,6 @@ books = {}
 book_id = 0
 
 @api_blueprint.route('/books', methods=['POST'])
-
 def create_book():
     global book_id
     is_valid, result = is_request_json()
@@ -112,9 +111,7 @@ def get_books():
         return [], 200
         
     return jsonify(result_books), 200
-
-
-    
+  
 @api_blueprint.route('/books/<int:book_id>', methods=['GET'])
 def get_book(book_id):
     # Attempt to retrieve the book by ID

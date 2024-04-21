@@ -2,6 +2,7 @@ import re
 from flask import jsonify
 import requests
 import google.generativeai as genai
+from app.models import process_published_date
 
 def fetch_language_from_openlibrary(isbn):
     """Fetch language information from the OpenLibrary API."""
@@ -57,20 +58,10 @@ def fetch_book_details(isbn):
     except Exception as e:
         raise RuntimeError(f"Error processing book details: {e}")
     
-def process_published_date(published_date):
-    # Check if the full date "YYYY-MM-DD" is present
-    if re.match(r'\d{4}-\d{2}-\d{2}', published_date):
-        return published_date  # Date is in the correct format
-    # Check if only the year "YYYY" is present
-    elif re.match(r'\d{4}', published_date):
-        return published_date  # Only the year is present
-    else:
-        return "missing"  # Neither full date nor year is available
-
 def fetch_summarized_content(text):
     """Fetch summarized content from the GenerativeAI API."""
     try:
-        genai.configure(api_key="AIzaSyCwwcINB8traD6HMwCX533qhuaowaqBWek")
+        genai.configure(api_key="enter-your-api-key-here")
         model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(text)
         if not response.text:

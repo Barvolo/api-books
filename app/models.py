@@ -1,4 +1,5 @@
 
+import re
 from flask import request
 
 
@@ -27,7 +28,15 @@ def is_request_json():
     return True, data
 
 
-
+def process_published_date(published_date):
+    # Check if the full date "YYYY-MM-DD" is present
+    if re.match(r'\d{4}-\d{2}-\d{2}', published_date):
+        return published_date  # Date is in the correct format
+    # Check if only the year "YYYY" is present
+    elif re.match(r'\d{4}', published_date):
+        return published_date  # Only the year is present
+    else:
+        return "missing"  # Neither full date nor year is available
 
 
 
