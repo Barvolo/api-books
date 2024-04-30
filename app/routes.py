@@ -104,7 +104,11 @@ def get_books():
                         break
                 else:
                     key, value = query.split('=')
-                    if key not in book_data or unquote(value) not in book_data[key]:
+                    if key == 'language':
+                        if unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value) not in book_data[key]:
+                            result_books.remove(book_data)
+
+                    elif key not in book_data or unquote(value) not in book_data[key]:
                         result_books.remove(book_data)
                         break
     except:
