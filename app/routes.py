@@ -71,20 +71,12 @@ def get_books():
                         break
                 else:
                     key, value = query.split('=')
-<<<<<<< HEAD
-                    if key == 'language':
-                        if unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value) not in book_data[key]:
-                            result_books.remove(book_data)
-
-                    elif key not in book_data or unquote(value) not in book_data[key]:
-=======
                     if key.lower() == 'genre' and value not in ['Fiction', 'Children', 'Biography', 'Science', 'Science Fiction', 'Fantasy','Other']:
                         return jsonify({"error": "Invalid genre"}), 422
                     elif key.lower() == 'language' and (unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value).lower() not in book_data[key]):
                         result_books.remove(book_data)
                         break
                     elif key not in book_data or unquote(value) not in book_data[key] or value == '':
->>>>>>> language
                         result_books.remove(book_data)
                         break
     except:
