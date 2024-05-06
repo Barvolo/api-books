@@ -29,7 +29,7 @@ def fetch_language_from_openlibrary(isbn):
     
 def fetch_book_details(isbn):
     """ Fetch book details from Google Books and augment with OpenLibrary language data. """
-    test_flag = True  # Set to False to enable GenerativeAI API
+    test_flag = False  # Set to False to enable GenerativeAI API
     google_books_url = f'https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}'
     try:
         response = requests.get(google_books_url)
@@ -65,7 +65,7 @@ def fetch_book_details(isbn):
 def fetch_summarized_content(text):
     """Fetch summarized content from the GenerativeAI API."""
     try:
-        genai.configure(api_key="enter-your-api-key-here")
+        genai.configure(api_key="")
         model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(text)
         if not response.text:
