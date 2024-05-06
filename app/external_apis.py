@@ -46,11 +46,15 @@ def fetch_book_details(isbn):
                 title = book_info.get("title", "non available")
                 promt = f"Summarize the book {title} in 5 sentences or less."
                 summary = fetch_summarized_content(promt)
+            lan = [book_info.get("language", "missing")]
+            if 'en' in lan:
+                lan = ['eng']
+
             return {
                 "authors": ' and '.join(book_info.get("authors", ["missing"])),
                 "publisher": book_info.get("publisher", "missing"),
                 "publishedDate": process_published_date(book_info.get("publishedDate", "missing")),
-                "language": languages,  # Use language data from OpenLibrary
+                "language": languages if languages != ['missing'] else lan ,# Use language data from OpenLibrary
                 "summary": summary
             }
     except requests.exceptions.RequestException as e:
