@@ -51,39 +51,6 @@ def create_book():
         return jsonify({"id": str(book_id), "status code": str(201)}), 201  # Respond with string ID as per requirement
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-'''''''''''
-@api_blueprint.route('/books', methods=['GET'])
-def get_books():
-    query_string = request.query_string.decode("utf-8")
-    
-    if query_string:
-        # If query string is present, parse it
-        filters = {}
-        for query in query_string.split('&'):
-            if '%20contains%20' in query:
-                field, value = query.split('%20contains%20')
-                filters[field.strip()] = value.strip()
-            else:
-                field, value = query.split('=')
-                filters[field.strip()] = value.strip()
-
-        # Filter books based on query
-        filtered_books = []
-        for book_id, book_data in books.items():
-            matches_all_filters = True
-            for field, value in filters.items():
-                if field in book_data and value not in book_data[field]:
-                    matches_all_filters = False
-                    break
-            if matches_all_filters:
-                filtered_books.append(book_data)
-        
-        return jsonify(filtered_books)
-    else:
-        # If no query string, return all books
-        return jsonify(list(books.values())) , 200
-
-'''''''''''
 
 @api_blueprint.route('/books', methods=['GET'])
 def get_books():
@@ -104,11 +71,20 @@ def get_books():
                         break
                 else:
                     key, value = query.split('=')
+<<<<<<< HEAD
                     if key == 'language':
                         if unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value) not in book_data[key]:
                             result_books.remove(book_data)
 
                     elif key not in book_data or unquote(value) not in book_data[key]:
+=======
+                    if key.lower() == 'genre' and value not in ['Fiction', 'Children', 'Biography', 'Science', 'Science Fiction', 'Fantasy','Other']:
+                        return jsonify({"error": "Invalid genre"}), 422
+                    elif key.lower() == 'language' and (unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value).lower() not in book_data[key]):
+                        result_books.remove(book_data)
+                        break
+                    elif key not in book_data or unquote(value) not in book_data[key] or value == '':
+>>>>>>> language
                         result_books.remove(book_data)
                         break
     except:
