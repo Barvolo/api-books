@@ -1,9 +1,7 @@
 from flask import Flask
+from .routes import loans_bp
 
 def create_app():
     app = Flask(__name__)
-
-    from .routes import main
-    app.register_blueprint(main)
-
+    app.register_blueprint(loans_bp)
     return app
