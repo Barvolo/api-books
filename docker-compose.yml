@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  books-service:
+    build: ./books-service
+    ports:
+      - "5001:5000"  # Host port 5001 to container port 5000
+
+  loans-service:
+    build: ./loans-service
+    ports:
+      - "5002:5000"  # Host port 5002 to container port 5000
+    depends_on:
+      - books-service
+
