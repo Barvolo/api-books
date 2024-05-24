@@ -64,21 +64,21 @@ def get_books():
         for book_id, book_data in books.items():
             result_books.append(book_data)
             for query in query_params.split('&'):
-                if '%20contains%20' in query:
-                    key, value = query.split('%20contains%20')
-                    if key.lower() != 'language' or unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value) not in book_data[key]:
-                        result_books.remove(book_data)
-                        break
-                else:
-                    key, value = query.split('=')
-                    if key.lower() == 'genre' and value not in ['Fiction', 'Children', 'Biography', 'Science', 'Science Fiction', 'Fantasy','Other']:
-                        return jsonify({"error": "Invalid genre"}), 422
-                    elif key.lower() == 'language' and (unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value).lower() not in book_data[key]):
-                        result_books.remove(book_data)
-                        break
-                    elif key not in book_data or unquote(value) not in book_data[key] or value == '':
-                        result_books.remove(book_data)
-                        break
+                #if '%20contains%20' in query:
+                #    key, value = query.split('%20contains%20')
+                #    if key.lower() != 'language' or unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value) not in book_data[key]:
+                #        result_books.remove(book_data)
+                #        break
+                #else:
+                key, value = query.split('=')
+                if key.lower() == 'genre' and value not in ['Fiction', 'Children', 'Biography', 'Science', 'Science Fiction', 'Fantasy','Other']:
+                    return jsonify({"error": "Invalid genre"}), 422
+                #elif key.lower() == 'language' and (unquote(value).lower() not in SUPPORTED_LANGUAGES or unquote(value).lower() not in book_data[key]):
+                #    result_books.remove(book_data)
+                #    break
+                elif key not in book_data or unquote(value) not in book_data[key] or value == '':
+                    result_books.remove(book_data)
+                    break
     except:
         return [], 200
         
@@ -127,7 +127,7 @@ def update_book(book_id):
         return jsonify({"error": "Missing fields, all fields must be provided or invalid argument"}), 422
     
     # Check if length of update data is correct
-    if len(update_data) != 9:
+    if len(update_data) != 7:
         return jsonify({"error": "Too many arguments"}), 422
     
     # Check if the genre is valid
@@ -142,8 +142,8 @@ def update_book(book_id):
         'genre': update_data['genre'],
         'publisher': update_data['publisher'],
         'publishedDate': update_data['publishedDate'],
-        'language': update_data['language'],
-        'summary': update_data['summary'],
+        #'language': update_data['language'],
+        #'summary': update_data['summary'],
         'id': book_id  # Preserve the ID
     }
     return jsonify({"id": book_id}), 200
