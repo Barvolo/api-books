@@ -1,113 +1,128 @@
 from typing import Counter
 from urllib.parse import unquote
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
+
 
 ratings_blueprint = Blueprint('ratings', __name__)
-ratings = {}
 
-def create_rating(book):
-    ratings[book['id']] = {
-            'values': [],  # Start with an empty list of values
-            'average': 0.0,  # Initial average is 0.0
-            'title': book['title'],  # Title from the book data
-            'id': book['id']  # ID from the book data
-        }
+def create_rating(book_id):
+    book = current_app.mongo.db.books.find_one({"id": book_id})
+
+    new_rating = {
+        'values': [],
+        'average': 0.0,
+        'title': book['title'],
+        'id': book_id
+    }
+    result = current_app.mongo.db.ratings.insert_one(new_rating)
+    if result.inserted_id:
+        return jsonify({"status": "Rating initialized for book", "rating_id": str(result.inserted_id)}), 201
+    else:
+        return jsonify({"error": "Failed to initialize rating"}), 500
+    
 
 def delete_rating(rating_id):
-    try:
-        del ratings[str(rating_id)]
-    except KeyError:
-        pass
+    result = current_app.mongo.db.ratings.delete_one({"id": rating_id})
+    if result.deleted_count == 0:
+        return jsonify({"error": "Rating not found"}), 404
+    else:
+        return jsonify({"status": "Rating deleted"}), 200
+   
         
 @ratings_blueprint.route('/ratings', methods=['GET'])
 def get_all_ratings():
-    # Return all ratings
+    
     query_params = request.query_string.decode("utf-8")
+
     if query_params == '':
-        return jsonify(list(ratings.values())), 200
-    try:
+        ratings_cursor = current_app.mongo.db.ratings.find({})
+
+    else:
         key, val = query_params.split('=')
         if key != 'id':
             return jsonify({"error": "Invalid query parameter"}), 400
-        if val not in ratings.keys():
-            return jsonify({"error": "Rating not found"}), 404
-        return jsonify(ratings[val]), 200
-    except ValueError:
-        return jsonify({"error": "Invalid query parameter"}), 400
+        else:
+            ratings_cursor = current_app.mongo.db.ratings.find_one({"id": val})
+    
+    ratings_cursor = list(ratings_cursor)
+    for rating in ratings_cursor:
+        if '_id' in rating:
+            rating['_id'] = str(rating['_id'])
+
+    if not ratings_cursor:
+        return jsonify({"error": "Rating not found"}), 404
+    
+    return jsonify(ratings_cursor), 200
+        
+        
    
-@ratings_blueprint.route('/ratings/<int:rating_id>', methods=['GET'])
+@ratings_blueprint.route('/ratings/<string:rating_id>', methods=['GET'])
 def get_rating(rating_id):
     # Attempt to retrieve the rating by ID
-    if str(rating_id) in ratings.keys():
-        return jsonify(ratings[str(rating_id)]), 200
+    rating = current_app.mongo.db.ratings.find_one({"id": rating_id})
+    if rating:
+        if '_id' in rating:
+            rating['_id'] = str(rating['_id'])
+        return jsonify(rating), 200
     else:
         return jsonify({"error": "Rating not found"}), 404
     
-@ratings_blueprint.route('/ratings/<int:book_id>/values', methods=['POST'])
+
+@ratings_blueprint.route('/ratings/<string:book_id>/values', methods=['POST'])
 def add_rating_value(book_id):
-    book_id = str(book_id)  # Convert to string for dictionary key
-    # Attempt to retrieve the rating by ID
-    if book_id in ratings.keys():
-        # Get the rating value from the request
-        data = request.get_json()
-        if 'value' not in data or not isinstance(data['value'], int):
-            return jsonify({"error": "Invalid data, 'value' must be an integer"}), 400
-        # Validate the rating value
-        if data['value'] not in {1, 2, 3, 4, 5}:
-            return jsonify({"error": "Rating value must be between 1 and 5"}), 422
-
-        # Add the new rating value to the list of values
-        ratings[book_id]['values'].append(data['value'])
-
-        # Calculate the new average rating
-        total = sum(ratings[book_id]['values'])
-        count = len(ratings[book_id]['values'])
-        new_average = round(total / count, 2)  # Round to 2 decimal places
-
-        # Update the average in the ratings dictionary
-        ratings[book_id]['average'] = new_average
-
-        # Return the new average rating
-        return jsonify({"new_average": new_average}), 200
-    else:
+    # Check if the rating exists
+    rating = current_app.mongo.db.ratings.find_one({"id": book_id})
+    if not rating:
         return jsonify({"error": "Rating not found"}), 404
+    
+    data = request.get_json()
+    if 'value' not in data or not isinstance(data['value'], int):
+        return jsonify({"error": "Invalid data, 'value' must be an integer"}), 400
+    # Validate the rating value
+    if data['value'] not in {1, 2, 3, 4, 5}:
+        return jsonify({"error": "Rating value must be between 1 and 5"}), 422
+    
+    # Update the existing rating
+    new_values = rating['values'] + [data['value']]
+    new_average = sum(new_values) / len(new_values)
+    current_app.mongo.db.ratings.update_one(
+        {"id": book_id},
+        {"$set": {"values": new_values, "average": new_average}}
+    )
+    return jsonify({"new_average": new_average}), 200
+
+    
     
 @ratings_blueprint.route('/top', methods=['GET'])
 def get_top_books():
-    # Filter books that have at least 3 ratings
-    eligible_books = {book_id: data for book_id, data in ratings.items() if len(data['values']) >= 3}
+    # MongoDB aggregation to filter books with at least 3 ratings and compute averages
+    pipeline = [
+        {"$match": {"values": {"$exists": True, "$not": {"$size": 0}}}},  # Ensure values array is not empty
+        {"$project": {
+            "id": 1,
+            "title": 1,
+            "average": {"$avg": "$values"},  # Calculate the average of values
+            "count": {"$size": "$values"}  # Count the number of ratings
+        }},
+        {"$match": {"count": {"$gte": 3}}}  # Filter books with at least 3 ratings
+    ]
 
-    # Compute the top three scores
-    if not eligible_books:
-        return jsonify([]), 200  # Return an empty list if no books are eligible
+    try:
+        results = list(current_app.mongo.db.ratings.aggregate(pipeline))
+        if not results:
+            return jsonify([]), 200  # Return an empty list if no books are eligible
 
-    # Gather all eligible scores
-    scores = [data['average'] for data in eligible_books.values()]
+        # Sort results by average score and get top 3 unique scores
+        results_sorted = sorted(results, key=lambda x: x['average'], reverse=True)
+        top_books = results_sorted[:3]  # Assuming we want the top 3 books
 
-    # Use a Counter to count frequencies of each score
-    score_frequencies = Counter(scores)
+        # Format the results to match expected output
+        top_books_formatted = [
+            {"id": book["id"], "title": book["title"], "average": round(book["average"], 2)}
+            for book in top_books
+        ]
 
-    # Sort the scores and extract the top 3 unique scores
-    top_three_scores = sorted(score_frequencies.keys(), reverse=True)[:3]
+        return jsonify(top_books_formatted), 200
 
-    # Build the dictionary for the top 3 scores with their frequencies
-    top_scores_dict = {score: score_frequencies[score] for score in top_three_scores}
-
-    cumulative_count = 0
-    top_books = []
-    for score, count in top_scores_dict.items():
-        cumulative_count += count
-        top_books.extend([
-            {
-                'id': book_id,
-                'title': data['title'],
-                'average': data['average']
-            }
-            for book_id, data in eligible_books.items() if data['average'] == score
-        ])
-        if cumulative_count >= 3:
-            break
-
-    top_books_sorted = sorted(top_books, key=lambda x: x['average'], reverse=True)
-    return jsonify(top_books_sorted), 200
-
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch top books: " + str(e)}), 500

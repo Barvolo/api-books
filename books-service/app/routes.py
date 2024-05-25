@@ -44,13 +44,13 @@ def create_book():
         data.update(book_details)
         # Insert the book data into MongoDB and get the inserted_id
         data['id'] = str(uuid.uuid4())
-        current_app.mongo.db.books.insert_one(data)
+        send_id = current_app.mongo.db.books.insert_one(data).inserted_id
         
         #data['id'] = str(inserted_book)  # Using MongoDB's generated ID as 'id'
         # Print to console for debugging (can be removed in production)
         #print(f'Book ID {book_id} added:', books[book_id])
 
-        create_rating(data)
+        create_rating(data['id'])
         # Return the new book record with status code 201 (Created)
         return jsonify({"id": data['id'], "status code": str(201)}), 201  # Respond with string ID as per requirement
     except Exception as e:
