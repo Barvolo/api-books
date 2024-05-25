@@ -1,5 +1,6 @@
 import requests
 import uuid
+from .models import get_book_details
 
 def handle_loan_request(data, mongo):
     required_fields = ['memberName', 'ISBN', 'loanDate']
@@ -18,8 +19,6 @@ def handle_loan_request(data, mongo):
     if mongo.db.loans.count_documents({"memberName": data['memberName'], "returnDate": None}) >= 2:
         return {"error": "Member has reached the loan limit"}, 422
     
-    
-    
     # Access the first book's details
     book_info = book_details[0]
     data['title'] = book_info.get('title', 'No Title Available')
@@ -34,13 +33,25 @@ def handle_loan_request(data, mongo):
     # Return the loanID in the response
     return {"loanID": data['loanID']}, 201
 
+def get_all_loans(mongo, query_params):
+    # Need fix dosent work correct with & in the url
+    formatted_query_params = {key: query_params[key] for key in query_params if key in ['memberName', 'ISBN', 'loanDate', 'returnDate']}
+    loans = mongo.db.loans.find(formatted_query_params)
+    loans = list(loans)
+    for loan in loans:
+        loan['_id'] = str(loan['_id'])
+    return loans, 200
     
 
-def get_book_details(isbn):
-    try:
-        response = requests.get(f"http://books-service:5001/books?ISBN={isbn}")
-        if response.status_code == 200:
-            return response.json()
-        return None
-    except requests.RequestException:
-        return None
+def get_loan_by_id(loan_id, mongo):
+    loan = mongo.db.loans.find_one({"loanID": loan_id})
+    if not loan:
+        return {"error": "Loan not found"}, 404
+    loan['_id'] = str(loan['_id'])
+    return loan, 200
+
+def delete_loan_by_id(loan_id, mongo):
+    result = mongo.db.loans.delete_one({"loanID": loan_id})
+    if result.deleted_count == 0:
+        return {"error": "Loan not found"}, 404
+    return {"message": f"Loan {loan_id} deleted successfully"}, 200
