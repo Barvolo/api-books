@@ -3,12 +3,31 @@ services:
   books-service:
     build: ./books-service
     ports:
-      - "5001:5000"  # Host port 5001 to container port 5000
+      - "5001:5001"  
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/books
 
   loans-service:
     build: ./loans-service
     ports:
-      - "5002:5000"  # Host port 5002 to container port 5000
+      - "5002:5002"  
     depends_on:
+      - mongo
       - books-service
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/loans
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+    driver: local
+
 
