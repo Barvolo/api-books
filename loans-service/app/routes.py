@@ -20,7 +20,8 @@ def list_loans():
     query_params = request.args
     # Check if query params are valid
     # Need fix dosent work correct with & in the url
-    valid_fields = ['memberName', 'ISBN', 'loanDate', 'returnDate']
+    # todo yers format
+    valid_fields = ['memberName', 'ISBN', 'title', 'bookID', 'loanDate', 'loanID']
     for key in query_params:
         if key not in valid_fields:
             return {"error": "Invalid query parameter"}, 400

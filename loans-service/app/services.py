@@ -34,8 +34,10 @@ def handle_loan_request(data, mongo):
     return {"loanID": data['loanID']}, 201
 
 def get_all_loans(mongo, query_params):
-    # Need fix dosent work correct with & in the url
-    formatted_query_params = {key: query_params[key] for key in query_params if key in ['memberName', 'ISBN', 'loanDate', 'returnDate']}
+    # Ensure only valid fields are included and log them
+    valid_fields = ['memberName', 'ISBN', 'title', 'bookID', 'loanDate', 'loanID']
+    formatted_query_params = {key: query_params[key] for key in query_params if key in valid_fields}
+    
     loans = mongo.db.loans.find(formatted_query_params)
     loans = list(loans)
     for loan in loans:
