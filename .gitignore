@@ -5,3 +5,9 @@ env/
 .DS_Store
 *.pyc
 __pycache__/
+**/.DS_Store
+**/*.pyc
+**/__pycache__/
+books-service/.DS_Store
+books-service/app/**/*.pyc
+books-service/app/__pycache__/
