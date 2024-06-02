@@ -3,7 +3,7 @@ services:
   books-service:
     build: ./books-service
     ports:
-      - "5001:5001"  
+      - "5001:5001"
     depends_on:
       - mongo
     environment:
@@ -12,7 +12,17 @@ services:
   loans-service:
     build: ./loans-service
     ports:
-      - "5002:5002"  
+      - "5002:5002"
+    depends_on:
+      - mongo
+      - books-service
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/loans
+
+  loans-service-2:
+    build: ./loans-service
+    ports:
+      - "5003:5002"
     depends_on:
       - mongo
       - books-service
@@ -23,11 +33,13 @@ services:
     image: mongo:latest
     ports:
       - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
 
-volumes:
-  mongo-data:
-    driver: local
-
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - books-service
+      - loans-service
+      - loans-service-2
 
