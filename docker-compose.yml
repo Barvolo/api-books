@@ -8,6 +8,7 @@ services:
       - mongo
     environment:
       - MONGO_URI=mongodb://mongo:27017/books
+    restart: always
 
   loans-service:
     build: ./loans-service
@@ -18,6 +19,7 @@ services:
       - books-service
     environment:
       - MONGO_URI=mongodb://mongo:27017/loans
+    restart: always
 
   loans-service-2:
     build: ./loans-service
@@ -28,11 +30,13 @@ services:
       - books-service
     environment:
       - MONGO_URI=mongodb://mongo:27017/loans
+    restart: always
 
   mongo:
     image: mongo:latest
     ports:
       - "27017:27017"
+    restart: always
 
   nginx:
     build: ./nginx
@@ -42,4 +46,5 @@ services:
       - books-service
       - loans-service
       - loans-service-2
+    restart: always
 
