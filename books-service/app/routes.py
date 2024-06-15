@@ -122,11 +122,13 @@ def delete_book(book_id):
         else:
             # If a document was deleted, proceed to delete related ratings
             delete_rating(book_id)
-            return jsonify({"status": "Book deleted"}), 200
+            # Return the ID of the deleted book
+            return jsonify({"status": "Book deleted", "id": book_id}), 200
     except Exception as e:
         # If there's an exception during the delete operation, log it and return a 500 error
         current_app.logger.error(f"Failed to delete book with ID {book_id}: {str(e)}")
         return jsonify({"error": "Internal Server Error"}), 500
+
     
 @api_blueprint.route('/books/<string:book_id>', methods=['PUT'])
 def update_book(book_id):
